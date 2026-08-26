@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicLib — Biblioteca de Discografias</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0d0d14; --surface: #16161f; --surface2: #1e1e2a; --surface3: #26263a;
+    --accent: #e94560; --accent2: #f5a623; --teal: #1abc9c; --purple: #8e44ad;
+    --text: #f0f0f0; --muted: #888; --border: rgba(255,255,255,0.08); --radius: 10px; --input-bg: #1a1a26;
+    --nav-h: 62px;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Courier New', monospace; background: var(--bg); color: var(--text); min-height: 100vh; min-height: -webkit-fill-available; padding-bottom: var(--nav-h); }
+
+  /* ── HEADER ── */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: .75rem 1rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 17px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+  .logo span { color: var(--accent2); }
+
+  /* ── DESKTOP TABS (hidden on mobile) ── */
+  .desktop-tabs { display: flex; gap: 4px; }
+  .tab { padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; border: none; background: transparent; color: var(--muted); transition: all .2s; font-family: inherit; }
+  .tab.active { background: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+  /* ── BOTTOM NAV (mobile only) ── */
+  .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: var(--nav-h); background: var(--surface); border-top: 1px solid var(--border); z-index: 200; }
+  .bottom-nav-inner { display: flex; height: 100%; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: var(--muted); font-family: inherit; font-size: 10px; cursor: pointer; padding: 0; transition: color .2s; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-btn .nav-icon { font-size: 22px; line-height: 1; }
+  .nav-btn .nav-label { font-size: 9px; text-transform: uppercase; letter-spacing: .8px; font-weight: 700; }
+
+  /* ── SECTIONS ── */
+  .app { max-width: 1000px; margin: 0 auto; }
+  .section { display: none; padding: 1rem; }
+  .section.active { display: block; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: .85rem; }
+  .card-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: .85rem; font-weight: 700; }
+
+  /* ── GRIDS ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: .85rem; }
+
+  /* ── FORMS ── */
+  label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+  input, select, textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; color: var(--text); font-family: inherit; font-size: 16px; outline: none; transition: border-color .2s; appearance: none; -webkit-appearance: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  select option { background: #1a1a26; }
+  .form-row { margin-bottom: 10px; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 12px 18px; border-radius: 9px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; border: none; transition: all .15s; letter-spacing: .4px; touch-action: manipulation; min-height: 44px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:active { background: #c73250; transform: scale(.97); }
+  .btn-secondary { background: var(--teal); color: #fff; }
+  .btn-secondary:active { background: #17a589; transform: scale(.97); }
+  .btn-warn { background: var(--accent2); color: #1a1a2e; }
+  .btn-warn:active { background: #d4911f; transform: scale(.97); }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:active { background: var(--surface3); }
+  .btn-block { width: 100%; display: block; text-align: center; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+
+  /* ── SEARCH ── */
+  .search-bar { display: flex; gap: 8px; margin-bottom: .85rem; }
+  .search-bar input { flex: 1; }
+  .result-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: .85rem; display: none; }
+  .result-box.visible { display: block; }
+  .result-name { font-size: 18px; font-weight: 700; color: var(--accent2); margin-bottom: .4rem; }
+  .result-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: .7rem; }
+
+  /* ── BADGES ── */
+  .badge { padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; }
+  .badge-hdd { background: rgba(233,69,96,.15); color: var(--accent); border: 1px solid rgba(233,69,96,.3); }
+  .badge-discos { background: rgba(26,188,156,.15); color: var(--teal); border: 1px solid rgba(26,188,156,.3); }
+  .badge-repro { background: rgba(245,166,35,.15); color: var(--accent2); border: 1px solid rgba(245,166,35,.3); }
+  .badge-rating { background: rgba(142,68,173,.15); color: #b07de0; border: 1px solid rgba(142,68,173,.3); }
+
+  /* ── STAT CARDS ── */
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .85rem .5rem; text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 700; color: var(--accent2); }
+  .stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-top: 3px; }
+
+  /* ── INVENTARIO: tabla en desktop, tarjetas en móvil ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .inv-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .inv-table th { padding: 8px 10px; text-align: left; background: var(--surface2); color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+  .inv-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  .inv-table tr:hover td { background: rgba(255,255,255,.03); }
+  .inv-table .actions { display: flex; gap: 4px; }
+  .mini-btn { padding: 5px 9px; border-radius: 5px; font-size: 11px; cursor: pointer; border: none; font-family: inherit; font-weight: 700; transition: all .15s; min-height: 30px; touch-action: manipulation; }
+  .mini-edit { background: rgba(26,188,156,.15); color: var(--teal); }
+  .mini-del { background: rgba(192,57,43,.15); color: #e74c3c; }
+  .mini-repro { background: rgba(245,166,35,.15); color: var(--accent2); }
+
+  /* Mobile cards for inventory */
+  .inv-cards { display: none; }
+  .inv-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: .7rem; }
+  .inv-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .5rem; }
+  .inv-card-name { font-size: 15px; font-weight: 700; flex: 1; margin-right: .5rem; }
+  .inv-card-rating { font-size: 13px; color: #b07de0; font-weight: 700; }
+  .inv-card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: .75rem; }
+  .inv-card-actions { display: flex; gap: 8px; }
+  .inv-card-actions .mini-btn { flex: 1; text-align: center; padding: 10px 6px; font-size: 12px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: .85rem; align-items: center; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select { flex: 1; min-width: 130px; }
+  .filter-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-actions .btn { font-size: 12px; padding: 9px 12px; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: calc(var(--nav-h) + 10px); left: 50%; transform: translateX(-50%) translateY(10px); padding: 12px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 700; z-index: 9999; opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--teal); color: #fff; }
+  .toast.error { background: var(--accent); color: #fff; }
+  .toast.info { background: var(--purple); color: #fff; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 1rem; }
+
+  /* ── TOP LISTS ── */
+  .top-list { list-style: none; }
+  .top-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .top-item:last-child { border-bottom: none; }
+  .top-rank { font-size: 20px; font-weight: 700; color: var(--border); width: 26px; flex-shrink: 0; }
+  .top-rank.gold { color: #f5a623; }
+  .top-rank.silver { color: #aaa; }
+  .top-rank.bronze { color: #cd7f32; }
+  .top-info { flex: 1; min-width: 0; }
+  .top-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-sub { font-size: 10px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-count { font-size: 16px; font-weight: 700; color: var(--accent2); flex-shrink: 0; }
+
+  /* ── HDD BARS ── */
+  .hdd-bar-wrap { margin-top: 8px; }
+  .hdd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .hdd-label { width: 80px; font-size: 10px; color: var(--muted); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hdd-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .hdd-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width .5s; }
+  .hdd-count { width: 24px; font-size: 11px; color: var(--muted); text-align: right; flex-shrink: 0; }
+
+  /* ── MODALS (bottom sheet on mobile) ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 1000; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px 18px 0 0; padding: 1.2rem 1.2rem 1.5rem; width: 100%; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .modal-handle { width: 36px; height: 4px; background: var(--surface3); border-radius: 2px; margin: 0 auto 1rem; }
+  .modal-title { font-size: 15px; font-weight: 700; color: var(--accent2); margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 1rem; }
+  .modal-actions .btn { flex: 1; }
+
+  /* ── SECTION SEP ── */
+  .section-sep { height: 1px; background: var(--border); margin: 1rem 0; }
+
+  /* ═══════════════ DESKTOP ≥ 640px ═══════════════ */
+  @media (min-width: 640px) {
+    body { padding-bottom: 2rem; }
+    .bottom-nav { display: none !important; }
+    .desktop-tabs { display: flex; }
+    .section { padding: 1.5rem; }
+    .grid2 { grid-template-columns: 1fr 1fr; }
+    .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+    .grid4 { grid-template-columns: repeat(4,1fr); }
+    .modal-overlay { align-items: center; }
+    .modal { border-radius: 14px; max-width: 520px; margin: 1rem; }
+    .modal-handle { display: none; }
+    .modal-actions .btn { flex: none; }
+    .modal-actions { justify-content: flex-end; }
+    .table-wrap { display: block; }
+    .inv-cards { display: none !important; }
+    .toast { bottom: 20px; left: auto; right: 20px; transform: translateY(10px); }
+    .toast.show { transform: translateY(0); }
+    input, select { font-size: 13px; }
+    .btn { font-size: 13px; padding: 9px 18px; min-height: auto; }
+  }
+
+  /* ═══════════════ MOBILE < 640px ═══════════════ */
+  @media (max-width: 639px) {
+    .bottom-nav { display: block; }
+    .desktop-tabs { display: none; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .grid4 { grid-template-columns: repeat(2,1fr); }
+    .table-wrap { display: none; }
+    .inv-cards { display: block; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    .filter-bar input, .filter-bar select { min-width: unset; }
+    .filter-actions { justify-content: stretch; }
+    .filter-actions .btn { flex: 1; }
+    .btn-row { flex-direction: column; }
+    .btn-row .btn { width: 100%; }
+    .header { padding: .6rem 1rem; }
+    .stat-num { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:1rem;">
+  <div style="font-size:40px;">🎵</div>
+  <div style="font-size:14px;font-weight:700;color:var(--accent);letter-spacing:2px;">MUSICLIB</div>
+  <div style="font-size:12px;color:var(--muted);">Abriendo base de datos...</div>
+  <div style="width:180px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:.5rem;">
+    <div style="height:100%;background:var(--accent);border-radius:2px;animation:load-bar 1.2s ease-in-out infinite;"></div>
+  </div>
+</div>
+<style>
+@keyframes load-bar {
+  0%   { width:0%;   margin-left:0; }
+  50%  { width:60%;  margin-left:20%; }
+  100% { width:0%;   margin-left:100%; }
+}
+</style>
+
+<div id="app-root" style="display:none;">
+<div class="app">
+  <div class="header">
+    <div class="logo">MUSIC<span>LIB</span></div>
+    <div class="desktop-tabs">
+      <button class="tab active" onclick="switchTab('formulario',this)">Formulario</button>
+      <button class="tab" onclick="switchTab('inventario',this)">Inventario</button>
+      <button class="tab" onclick="switchTab('estadisticas',this)">Estadisticas</button>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="nav-btn active" id="nav-formulario" onclick="switchTabMobile('formulario')">
+        <span class="nav-icon">📝</span><span class="nav-label">Agregar</span>
+      </button>
+      <button class="nav-btn" id="nav-inventario" onclick="switchTabMobile('inventario')">
+        <span class="nav-icon">📋</span><span class="nav-label">Inventario</span>
+      </button>
+      <button class="nav-btn" id="nav-estadisticas" onclick="switchTabMobile('estadisticas')">
+        <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="tab-formulario" class="section active">
+    <div class="card">
+      <div class="card-title">Buscar discografia</div>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Escribe nombre de artista o banda..." oninput="liveSearch(this.value)" onkeydown="if(event.key==='Enter')buscarDiscografia()">
+        <button class="btn btn-secondary" onclick="buscarDiscografia()">Buscar</button>
+        <button class="btn btn-ghost" onclick="limpiarBusqueda()">Limpiar</button>
+      </div>
+      <div id="search-suggestions" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:-8px;margin-bottom:8px;"></div>
+      <div id="search-result" class="result-box"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Agregar nueva discografia</div>
+      <div class="grid2">
+        <div class="form-row"><label>Artista / Banda *</label><input type="text" id="f-banda" placeholder="Ej: Metallica"></div>
+        <div class="form-row"><label>Genero musical</label><input type="text" id="f-genero" placeholder="Ej: Metal / Thrash"></div>
+      </div>
+      <div class="grid3">
+        <div class="form-row"><label>N de discos *</label><input type="number" id="f-discos" placeholder="10" min="1"></div>
+        <div class="form-row"><label>Ano inicio</label><input type="number" id="f-anio" placeholder="1981" min="1900" max="2099"></div>
+        <div class="form-row"><label>Rating (1-10)</label><input type="number" id="f-rating" placeholder="9" min="1" max="10"></div>
+      </div>
+      <div class="grid2">
+        <div class="form-row">
+          <label>Disco duro *</label>
+          <input type="text" id="f-hdd" placeholder="Disco Duro 1" list="hdd-list">
+          <datalist id="hdd-list"></datalist>
+        </div>
+        <div class="form-row">
+          <label>Formato</label>
+          <select id="f-formato">
+            <option value="">Seleccionar...</option>
+            <option>Digital</option><option>CD</option><option>Vinyl</option>
+            <option>CD + Digital</option><option>Vinyl + CD</option><option>Vinyl + Digital</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="form-row"><label>Reproducciones</label><input type="number" id="f-repros" placeholder="0" min="0"></div>
+        <div class="form-row"><label>Notas / Comentarios</label><input type="text" id="f-notas" placeholder="Ej: Incluye bootlegs"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="agregarDiscografia()">+ Guardar en inventario</button>
+        <button class="btn btn-ghost" onclick="limpiarFormulario()">Limpiar campos</button>
+      </div>
+    </div>
+
+    <div class="grid4">
+      <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Artistas</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-discos">0</div><div class="stat-label">Total discos</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-repros">0</div><div class="stat-label">Reproducciones</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-hdds">0</div><div class="stat-label">Discos duros</div></div>
+    </div>
+  </div>
+
+  <div id="tab-inventario" class="section">
+    <div class="filter-bar">
+      <input type="text" id="filter-text" placeholder="Filtrar por nombre, genero..." oninput="renderTabla()">
+      <select id="filter-hdd" onchange="renderTabla()"><option value="">Todos los discos duros</option></select>
+      <select id="filter-sort" onchange="renderTabla()">
+        <option value="banda">Ordenar: A-Z</option>
+        <option value="repros">Mas reproducidos</option>
+        <option value="discos">Mas discos</option>
+        <option value="rating">Mejor rating</option>
+      </select>
+      <div class="filter-actions">
+        <button class="btn btn-warn" onclick="exportarCSV()">CSV</button>
+        <button class="btn btn-secondary" onclick="exportarJSON()">&#8595; JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('import-json-input').click()">&#8593; JSON</button>
+        <input type="file" id="import-json-input" accept=".json" style="display:none" onchange="importarJSON(this)">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Artista / Banda</th><th>Genero</th><th>Discos</th>
+            <th>Ano</th><th>Disco Duro</th><th>Repros</th><th>Rating</th><th>Formato</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+    </div>
+    <div class="inv-cards" id="inv-cards"></div>
+    <div id="tabla-empty" class="empty-state" style="display:none;">
+      <div class="icon">🎵</div>
+      <div>No hay discografias todavia</div>
+      <div style="font-size:12px;margin-top:8px;color:var(--muted)">Ve al Formulario y agrega tu primera discografia</div>
+    </div>
+  </div>
+
+  <div id="tab-estadisticas" class="section">
+    <div class="grid2" style="margin-bottom:1rem;">
+      <div class="card">
+        <div class="card-title">Top reproducciones</div>
+        <ol class="top-list" id="top-list"></ol>
+      </div>
+      <div class="card">
+        <div class="card-title">Por disco duro</div>
+        <div class="hdd-bar-wrap" id="hdd-bars"></div>
+        <div class="section-sep"></div>
+        <div class="card-title">Mejores ratings</div>
+        <ol class="top-list" id="rating-list"></ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Resumen por genero</div>
+      <div id="genero-stats"></div>
+    </div>
+  </div>
+</div><!-- /.app -->
+</div><!-- /#app-root -->
+
+<div id="modal-edit" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar discografia</div>
+    <input type="hidden" id="edit-idx">
+    <div class="grid2">
+      <div class="form-row"><label>Artista / Banda *</label><input type="text" id="edit-banda"></div>
+      <div class="form-row"><label>Genero</label><input type="text" id="edit-genero"></div>
+    </div>
+    <div class="grid3">
+      <div class="form-row"><label>N de discos</label><input type="number" id="edit-discos" min="1"></div>
+      <div class="form-row"><label>Ano inicio</label><input type="number" id="edit-anio"></div>
+      <div class="form-row"><label>Rating (1-10)</label><input type="number" id="edit-rating" min="1" max="10"></div>
+    </div>
+    <div class="grid2">
+      <div class="form-row"><label>Disco duro</label><input type="text" id="edit-hdd"></div>
+      <div class="form-row"><label>Formato</label><input type="text" id="edit-formato"></div>
+    </div>
+    <div class="grid2">
+      <div class="form-row"><label>Reproducciones</label><input type="number" id="edit-repros" min="0"></div>
+      <div class="form-row"><label>Notas</label><input type="text" id="edit-notas"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-secondary" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-repro" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Actualizar reproducciones</div>
+    <input type="hidden" id="repro-idx">
+    <div id="repro-info" style="margin-bottom:1rem;font-size:13px;color:var(--muted);"></div>
+    <div class="form-row">
+      <label>Nuevo numero de reproducciones</label>
+      <input type="number" id="repro-val" min="0">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeReproModal()">Cancelar</button>
+      <button class="btn btn-warn" onclick="guardarRepro()">Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  INDEXEDDB STORAGE ENGINE
+//  Base de datos local con capacidad de cientos de MB
+// ═══════════════════════════════════════════════════════
+const IDB_NAME    = 'MusicLibDB';
+const IDB_VERSION = 1;
+const STORE_NAME  = 'discografias';
+const META_STORE  = 'meta';
+
+let _idb = null;
+
+function abrirIDB() {
+  if (_idb) return Promise.resolve(_idb);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('banda', 'banda', { unique: false });
+        store.createIndex('hdd',   'hdd',   { unique: false });
+      }
+      if (!db.objectStoreNames.contains(META_STORE)) {
+        db.createObjectStore(META_STORE, { keyPath: 'clave' });
+      }
+    };
+    req.onsuccess = e => { _idb = e.target.result; resolve(_idb); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+function idbGetAll() {
+  return abrirIDB().then(db => new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  }));
+}
+
+function idbPutAll(records) {
+  return abrirIDB().then(db => new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    records.forEach(r => store.put(r));
+    tx.oncomplete = () => resolve();
+    tx.onerror    = () => reject(tx.error);
+  }));
+}
+
+function idbPut(record) {
+  return abrirIDB().then(db => new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_NAME, 'readwrite');
+    const req = tx.objectStore(STORE_NAME).put(record);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  }));
+}
+
+function idbDelete(id) {
+  return abrirIDB().then(db => new Promise((resolve, reject) => {
+    const tx  = db.transaction(STORE_NAME, 'readwrite');
+    const req = tx.objectStore(STORE_NAME).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = () => reject(req.error);
+  }));
+}
+
+// ═══════════════════════════════════════════════════════
+//  MIGRACIÓN localStorage → IndexedDB (primera vez)
+// ═══════════════════════════════════════════════════════
+const LS_KEY = 'musiclib_data';
+
+async function migrarDesdeLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return false;
+    // Asignar ids si no los tienen
+    const conId = parsed.map((r, i) => ({ id: i + 1, ...r }));
+    await idbPutAll(conId);
+    localStorage.removeItem(LS_KEY);
+    console.log('Migracion localStorage → IndexedDB: ' + conId.length + ' registros');
+    return true;
+  } catch(e) { return false; }
+}
+
+// ═══════════════════════════════════════════════════════
+//  DATOS EN MEMORIA  (array de trabajo)
+// ═══════════════════════════════════════════════════════
+const SAMPLE = [
+  {banda:'Metallica',genero:'Metal / Thrash',discos:10,anio:1981,hdd:'Disco Duro 1',repros:245,rating:9,formato:'Digital',notas:'Discografia completa'},
+  {banda:'Pink Floyd',genero:'Rock Progresivo',discos:15,anio:1965,hdd:'Disco Duro 1',repros:189,rating:10,formato:'CD + Digital',notas:'Incluye bootlegs'},
+  {banda:'Daft Punk',genero:'Electronic / House',discos:4,anio:1993,hdd:'Disco Duro 2',repros:312,rating:10,formato:'Digital',notas:'Incluye colaboraciones'},
+  {banda:'Led Zeppelin',genero:'Rock Clasico',discos:9,anio:1968,hdd:'Disco Duro 1',repros:156,rating:9,formato:'Vinyl + CD',notas:'Remasters incluidos'},
+  {banda:'The Beatles',genero:'Rock / Pop',discos:13,anio:1963,hdd:'Disco Duro 2',repros:201,rating:10,formato:'CD',notas:'Ediciones mono y stereo'},
+  {banda:'Radiohead',genero:'Alternative Rock',discos:9,anio:1992,hdd:'Disco Duro 2',repros:98,rating:9,formato:'Digital',notas:''},
+  {banda:'Boards of Canada',genero:'Electronic / Ambient',discos:6,anio:1996,hdd:'Disco Duro 3',repros:134,rating:9,formato:'Digital',notas:'Incluye EPs'},
+  {banda:'System of a Down',genero:'Metal / Alt Metal',discos:5,anio:1994,hdd:'Disco Duro 1',repros:88,rating:8,formato:'CD',notas:''},
+  {banda:'Portishead',genero:'Trip-Hop',discos:3,anio:1991,hdd:'Disco Duro 2',repros:145,rating:9,formato:'Digital',notas:''},
+  {banda:'Miles Davis',genero:'Jazz / Fusion',discos:50,anio:1945,hdd:'Disco Duro 3',repros:67,rating:10,formato:'CD + Vinyl',notas:'Coleccion extensa'},
+];
+
+let db = [];   // array en memoria, sincronizado con IndexedDB
+
+// Persiste el array completo en IDB
+async function saveData() {
+  await idbPutAll(db);
+}
+
+// ═══════════════════════════════════════════════════════
+//  ARRANQUE
+// ═══════════════════════════════════════════════════════
+async function iniciar() {
+  mostrarCargando(true);
+  try {
+    await abrirIDB();
+    const migrado = await migrarDesdeLocalStorage();
+    db = await idbGetAll();
+    if (db.length === 0) {
+      db = SAMPLE.map((r, i) => ({ id: i + 1, ...r }));
+      await idbPutAll(db);
+    }
+    if (migrado) toast('Datos migrados a IndexedDB ✓', 'success');
+  } catch(e) {
+    console.error('Error IDB:', e);
+    toast('Error al abrir base de datos', 'error');
+    db = SAMPLE.map((r, i) => ({ id: i + 1, ...r }));
+  }
+  mostrarCargando(false);
+  updateStats();
+  updateHddDatalist();
+}
+
+function mostrarCargando(show) {
+  document.getElementById('loading-screen').style.display = show ? 'flex' : 'none';
+  document.getElementById('app-root').style.display = show ? 'none' : 'block';
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+type; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+function switchTabMobile(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='inventario'){renderTabla();updateHddFilter();}
+  if(name==='estadisticas') renderStats();
+  if(name==='formulario') updateStats();
+  window.scrollTo(0,0);
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='inventario'){renderTabla();updateHddFilter();}
+  if(name==='estadisticas') renderStats();
+  if(name==='formulario') updateStats();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CRUD
+// ═══════════════════════════════════════════════════════
+async function agregarDiscografia() {
+  const banda  = document.getElementById('f-banda').value.trim();
+  const discos = document.getElementById('f-discos').value.trim();
+  const hdd    = document.getElementById('f-hdd').value.trim();
+  if(!banda) { toast('El campo Artista/Banda es obligatorio','error'); document.getElementById('f-banda').focus(); return; }
+  if(!discos){ toast('El campo N de discos es obligatorio','error');  document.getElementById('f-discos').focus(); return; }
+  if(!hdd)   { toast('El campo Disco Duro es obligatorio','error');   document.getElementById('f-hdd').focus();   return; }
+
+  const dup = db.findIndex(r => r.banda.toLowerCase() === banda.toLowerCase());
+  if (dup >= 0) {
+    if (!confirm('Ya existe "'+banda+'". Deseas actualizar ese registro?')) return;
+    db[dup] = { ...db[dup], ...buildRecord() };
+    await idbPut(db[dup]);
+    toast('Discografia de "'+banda+'" actualizada','info');
+  } else {
+    const rec = buildRecord();
+    const newId = await idbPut(rec);   // IDB asigna el id
+    rec.id = newId;
+    db.push(rec);
+    toast('Discografia de "'+banda+'" guardada!','success');
+  }
+  limpiarFormulario(); updateStats(); updateHddDatalist();
+}
+
+function buildRecord() {
+  return {
+    banda:   document.getElementById('f-banda').value.trim(),
+    genero:  document.getElementById('f-genero').value.trim(),
+    discos:  parseInt(document.getElementById('f-discos').value)||0,
+    anio:    parseInt(document.getElementById('f-anio').value)||'',
+    hdd:     document.getElementById('f-hdd').value.trim(),
+    repros:  parseInt(document.getElementById('f-repros').value)||0,
+    rating:  parseInt(document.getElementById('f-rating').value)||'',
+    formato: document.getElementById('f-formato').value,
+    notas:   document.getElementById('f-notas').value.trim(),
+  };
+}
+
+function limpiarFormulario() {
+  ['f-banda','f-genero','f-discos','f-anio','f-hdd','f-repros','f-rating','f-notas'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('f-formato').selectedIndex=0;
+}
+
+function buscarDiscografia() {
+  const q   = document.getElementById('search-input').value.trim();
+  const box  = document.getElementById('search-result');
+  const sugg = document.getElementById('search-suggestions');
+  sugg.style.display='none';
+  if(!q){box.className='result-box';box.innerHTML='';return;}
+  const found = db.find(r=>r.banda.toLowerCase()===q.toLowerCase());
+  if(found){showResult(found,box);}
+  else {
+    const partial = db.filter(r=>r.banda.toLowerCase().includes(q.toLowerCase()));
+    if(partial.length===1){showResult(partial[0],box);}
+    else if(partial.length>1){
+      box.className='result-box visible';
+      box.innerHTML='<div style="font-size:13px;color:var(--muted);">Se encontraron '+partial.length+' resultados. Selecciona uno:</div>'+
+        '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">'+
+        partial.map(r=>'<button class="btn btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="selectResult(\''+r.banda.replace(/'/g,"\\'")+'\')">' +r.banda+'</button>').join('')+'</div>';
+    } else {
+      box.className='result-box visible';
+      box.innerHTML='<div style="color:var(--accent);font-size:13px;">No se encontro ninguna discografia con "'+q+'"</div>';
+    }
+  }
+}
+
+function selectResult(banda){ document.getElementById('search-input').value=banda; buscarDiscografia(); }
+
+function showResult(r, box) {
+  box.className='result-box visible';
+  box.innerHTML='<div class="result-name">'+r.banda+'</div>'+
+    (r.genero?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">'+r.genero+(r.anio?' · desde '+r.anio:'')+'</div>':'')+
+    '<div class="result-meta">'+
+    '<span class="badge badge-hdd">&#128190; '+(r.hdd||'—')+'</span>'+
+    '<span class="badge badge-discos">&#128191; '+r.discos+' discos</span>'+
+    '<span class="badge badge-repro">&#9654; '+r.repros+' reproducciones</span>'+
+    (r.rating?'<span class="badge badge-rating">&#9733; '+r.rating+'/10</span>':'')+
+    (r.formato?'<span class="badge" style="background:rgba(142,68,173,.15);color:#b07de0;border:1px solid rgba(142,68,173,.3);">'+r.formato+'</span>':'')+
+    '</div>'+
+    (r.notas?'<div style="margin-top:8px;font-size:11px;color:var(--muted);font-style:italic;">'+r.notas+'</div>':'')+
+    '<div style="margin-top:10px;display:flex;gap:6px;">'+
+    '<button class="btn btn-warn" style="font-size:12px;padding:6px 12px;" onclick="abrirReproModal(\''+r.banda.replace(/'/g,"\\'")+'\')">+ Reproducciones</button>'+
+    '<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="limpiarBusqueda()">Cerrar</button>'+
+    '</div>';
+}
+
+function limpiarBusqueda() {
+  document.getElementById('search-input').value='';
+  document.getElementById('search-result').className='result-box';
+  document.getElementById('search-result').innerHTML='';
+  document.getElementById('search-suggestions').style.display='none';
+}
+
+function liveSearch(q) {
+  const sugg = document.getElementById('search-suggestions');
+  document.getElementById('search-result').className='result-box';
+  document.getElementById('search-result').innerHTML='';
+  if(!q||q.length<2){sugg.style.display='none';return;}
+  const matches = db.filter(r=>r.banda.toLowerCase().includes(q.toLowerCase())).slice(0,5);
+  if(!matches.length){sugg.style.display='none';return;}
+  sugg.style.display='block';
+  sugg.innerHTML=matches.map(r=>
+    '<div onclick="selectResult(\''+r.banda.replace(/'/g,"\\'")+'\');document.getElementById(\'search-suggestions\').style.display=\'none\';" '+
+    'style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;" '+
+    'onmouseover="this.style.background=\'var(--surface3)\'" onmouseout="this.style.background=\'\'">'+
+    '<span>'+r.banda+'</span><span style="font-size:11px;color:var(--muted);">'+(r.hdd||'')+'</span></div>'
+  ).join('');
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent  = db.length;
+  document.getElementById('stat-discos').textContent = db.reduce((s,r)=>s+(r.discos||0),0);
+  document.getElementById('stat-repros').textContent = db.reduce((s,r)=>s+(r.repros||0),0);
+  const hdds = new Set(db.map(r=>r.hdd).filter(Boolean));
+  document.getElementById('stat-hdds').textContent = hdds.size;
+  updateHddDatalist();
+}
+
+function updateHddDatalist() {
+  const hdds = [...new Set(db.map(r=>r.hdd).filter(Boolean))];
+  document.getElementById('hdd-list').innerHTML = hdds.map(h=>'<option value="'+h+'">').join('');
+}
+
+function updateHddFilter() {
+  const sel = document.getElementById('filter-hdd');
+  const cur = sel.value;
+  const hdds = [...new Set(db.map(r=>r.hdd).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todos los discos duros</option>'+hdds.map(h=>'<option'+(h===cur?' selected':'')+'>'+h+'</option>').join('');
+}
+
+function renderTabla() {
+  const q    = document.getElementById('filter-text').value.toLowerCase();
+  const hdd  = document.getElementById('filter-hdd').value;
+  const sort = document.getElementById('filter-sort').value;
+  let data = db.filter(r=>{
+    const match    = !q   || r.banda.toLowerCase().includes(q)||(r.genero||'').toLowerCase().includes(q)||(r.notas||'').toLowerCase().includes(q);
+    const hddMatch = !hdd || r.hdd===hdd;
+    return match && hddMatch;
+  });
+  if(sort==='repros') data.sort((a,b)=>(b.repros||0)-(a.repros||0));
+  else if(sort==='discos') data.sort((a,b)=>(b.discos||0)-(a.discos||0));
+  else if(sort==='rating') data.sort((a,b)=>(b.rating||0)-(a.rating||0));
+  else data.sort((a,b)=>a.banda.localeCompare(b.banda));
+
+  const tbody = document.getElementById('tabla-body');
+  const cards = document.getElementById('inv-cards');
+  const empty = document.getElementById('tabla-empty');
+  if(!data.length){tbody.innerHTML='';cards.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+
+  tbody.innerHTML = data.map((r,i)=>{
+    const idx = db.indexOf(r);
+    return '<tr>'+
+      '<td style="color:var(--muted);font-size:11px;">'+(i+1)+'</td>'+
+      '<td style="font-weight:700;">'+r.banda+'</td>'+
+      '<td style="color:var(--muted);font-size:12px;">'+(r.genero||'—')+'</td>'+
+      '<td style="text-align:center;color:var(--teal);">'+(r.discos||'—')+'</td>'+
+      '<td style="text-align:center;color:var(--muted);font-size:12px;">'+(r.anio||'—')+'</td>'+
+      '<td><span class="badge badge-hdd" style="font-size:10px;">'+(r.hdd||'—')+'</span></td>'+
+      '<td style="text-align:center;color:var(--accent2);font-weight:700;">'+(r.repros||0)+'</td>'+
+      '<td style="text-align:center;color:#b07de0;">'+(r.rating?r.rating+'/10':'—')+'</td>'+
+      '<td style="font-size:11px;color:var(--muted);">'+(r.formato||'—')+'</td>'+
+      '<td><div class="actions">'+
+        '<button class="mini-btn mini-edit" onclick="abrirEdicion('+idx+')">Editar</button>'+
+        '<button class="mini-btn mini-repro" onclick="abrirReproModal2('+idx+')">+Repro</button>'+
+        '<button class="mini-btn mini-del" onclick="eliminar('+idx+')">X</button>'+
+      '</div></td></tr>';
+  }).join('');
+
+  cards.innerHTML = data.map((r,i)=>{
+    const idx = db.indexOf(r);
+    return '<div class="inv-card">'+
+      '<div class="inv-card-head"><div class="inv-card-name">'+r.banda+'</div>'+(r.rating?'<div class="inv-card-rating">★'+r.rating+'/10</div>':'')+'</div>'+
+      '<div class="inv-card-meta">'+
+        '<span class="badge badge-hdd">💾 '+(r.hdd||'—')+'</span>'+
+        '<span class="badge badge-discos">💿 '+(r.discos||0)+' discos</span>'+
+        '<span class="badge badge-repro">▶ '+(r.repros||0)+'</span>'+
+        (r.genero?'<span class="badge" style="background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);">'+r.genero+'</span>':'')+
+        (r.anio?'<span class="badge" style="background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);">'+r.anio+'</span>':'')+
+      '</div>'+
+      (r.notas?'<div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:.6rem;">'+r.notas+'</div>':'')+
+      '<div class="inv-card-actions">'+
+        '<button class="mini-btn mini-edit" onclick="abrirEdicion('+idx+')">✏️ Editar</button>'+
+        '<button class="mini-btn mini-repro" onclick="abrirReproModal2('+idx+')">▶ Repros</button>'+
+        '<button class="mini-btn mini-del" onclick="eliminar('+idx+')">🗑 Borrar</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+async function eliminar(idx) {
+  if(!confirm('Eliminar la discografia de "'+db[idx].banda+'"? Esta accion no se puede deshacer.')) return;
+  const nombre = db[idx].banda;
+  const id     = db[idx].id;
+  await idbDelete(id);
+  db.splice(idx, 1);
+  renderTabla(); updateStats(); updateHddFilter();
+  toast('Discografia de "'+nombre+'" eliminada','error');
+}
+
+function abrirEdicion(idx) {
+  const r = db[idx];
+  document.getElementById('edit-idx').value    = idx;
+  document.getElementById('edit-banda').value  = r.banda;
+  document.getElementById('edit-genero').value = r.genero||'';
+  document.getElementById('edit-discos').value = r.discos||'';
+  document.getElementById('edit-anio').value   = r.anio||'';
+  document.getElementById('edit-hdd').value    = r.hdd||'';
+  document.getElementById('edit-repros').value = r.repros||'';
+  document.getElementById('edit-rating').value = r.rating||'';
+  document.getElementById('edit-formato').value= r.formato||'';
+  document.getElementById('edit-notas').value  = r.notas||'';
+  document.getElementById('modal-edit').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-edit').classList.remove('open'); }
+
+async function guardarEdicion() {
+  const idx   = parseInt(document.getElementById('edit-idx').value);
+  const banda = document.getElementById('edit-banda').value.trim();
+  if(!banda){toast('El nombre es obligatorio','error');return;}
+  db[idx] = {
+    ...db[idx],
+    banda,
+    genero:  document.getElementById('edit-genero').value.trim(),
+    discos:  parseInt(document.getElementById('edit-discos').value)||0,
+    anio:    parseInt(document.getElementById('edit-anio').value)||'',
+    hdd:     document.getElementById('edit-hdd').value.trim(),
+    repros:  parseInt(document.getElementById('edit-repros').value)||0,
+    rating:  parseInt(document.getElementById('edit-rating').value)||'',
+    formato: document.getElementById('edit-formato').value,
+    notas:   document.getElementById('edit-notas').value.trim(),
+  };
+  await idbPut(db[idx]);
+  closeModal(); renderTabla(); updateStats(); updateHddFilter();
+  toast('Discografia de "'+banda+'" actualizada');
+}
+
+function abrirReproModal(banda) {
+  const idx = db.findIndex(r=>r.banda.toLowerCase()===banda.toLowerCase());
+  if(idx<0) return;
+  abrirReproModal2(idx);
+}
+
+function abrirReproModal2(idx) {
+  const r = db[idx];
+  document.getElementById('repro-idx').value   = idx;
+  document.getElementById('repro-info').textContent = 'Artista: '+r.banda+' — Reproducciones actuales: '+(r.repros||0);
+  document.getElementById('repro-val').value   = r.repros||0;
+  document.getElementById('modal-repro').classList.add('open');
+}
+
+function closeReproModal(){ document.getElementById('modal-repro').classList.remove('open'); }
+
+async function guardarRepro() {
+  const idx = parseInt(document.getElementById('repro-idx').value);
+  const val = parseInt(document.getElementById('repro-val').value);
+  if(isNaN(val)||val<0){toast('Ingresa un numero valido','error');return;}
+  db[idx].repros = val;
+  await idbPut(db[idx]);
+  closeReproModal(); renderTabla(); updateStats();
+  const box = document.getElementById('search-result');
+  if(box.innerHTML) buscarDiscografia();
+  toast('Reproducciones actualizadas a '+val+' para "'+db[idx].banda+'"','info');
+}
+
+function renderStats() {
+  const sorted = [...db].sort((a,b)=>(b.repros||0)-(a.repros||0));
+  const rankColors = ['gold','silver','bronze','',''];
+  document.getElementById('top-list').innerHTML = sorted.slice(0,5).map((r,i)=>
+    '<li class="top-item"><div class="top-rank '+(rankColors[i]||'')+'">'+(i+1)+'</div>'+
+    '<div class="top-info"><div class="top-name">'+r.banda+'</div><div class="top-sub">'+(r.genero||'')+' · '+(r.hdd||'')+'</div></div>'+
+    '<div class="top-count">'+(r.repros||0)+'</div></li>'
+  ).join('');
+  const byRating = [...db].filter(r=>r.rating).sort((a,b)=>(b.rating||0)-(a.rating||0));
+  document.getElementById('rating-list').innerHTML = byRating.slice(0,5).map((r,i)=>
+    '<li class="top-item"><div class="top-rank '+(rankColors[i]||'')+'">'+(i+1)+'</div>'+
+    '<div class="top-info"><div class="top-name">'+r.banda+'</div><div class="top-sub">'+(r.genero||'')+'</div></div>'+
+    '<div class="top-count" style="font-size:14px;">&#9733;'+r.rating+'</div></li>'
+  ).join('');
+  const hddMap={};
+  db.forEach(r=>{if(r.hdd) hddMap[r.hdd]=(hddMap[r.hdd]||0)+1;});
+  const maxH = Math.max(...Object.values(hddMap),1);
+  document.getElementById('hdd-bars').innerHTML = Object.entries(hddMap).sort((a,b)=>b[1]-a[1]).map(([h,c])=>
+    '<div class="hdd-row"><div class="hdd-label">'+h+'</div><div class="hdd-bar"><div class="hdd-fill" style="width:'+Math.round(c/maxH*100)+'%"></div></div><div class="hdd-count">'+c+'</div></div>'
+  ).join('');
+  const genMap={};
+  db.forEach(r=>{if(r.genero) genMap[r.genero]={count:(genMap[r.genero]||{count:0,repros:0}).count+1,repros:(genMap[r.genero]||{count:0,repros:0}).repros+(r.repros||0)};});
+  const genEntries = Object.entries(genMap).sort((a,b)=>b[1].repros-a[1].repros);
+  document.getElementById('genero-stats').innerHTML='<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:4px;">'+
+    '<div style="font-size:10px;color:var(--muted);padding:6px 0;text-transform:uppercase;letter-spacing:1px;">Genero</div>'+
+    '<div style="font-size:10px;color:var(--muted);padding:6px 0;text-align:center;text-transform:uppercase;letter-spacing:1px;">Artistas</div>'+
+    '<div style="font-size:10px;color:var(--muted);padding:6px 0;text-align:right;text-transform:uppercase;letter-spacing:1px;">Reproducciones</div>'+
+    genEntries.map(([g,v])=>
+      '<div style="padding:7px 0;border-top:1px solid var(--border);font-size:13px;">'+g+'</div>'+
+      '<div style="padding:7px 0;border-top:1px solid var(--border);text-align:center;color:var(--teal);font-weight:700;">'+v.count+'</div>'+
+      '<div style="padding:7px 0;border-top:1px solid var(--border);text-align:right;color:var(--accent2);font-weight:700;">'+v.repros+'</div>'
+    ).join('')+'</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+//  EXPORTAR / IMPORTAR
+// ═══════════════════════════════════════════════════════
+function exportarJSON() {
+  const fecha   = new Date().toISOString().slice(0,10);
+  const payload = { version:2, motor:'IndexedDB', fecha, total:db.length, discografias: db };
+  const blob    = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'musiclib_backup_'+fecha+'.json';
+  a.click();
+  toast('Backup exportado ('+db.length+' registros)', 'success');
+}
+
+async function importarJSON(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const nuevos = parsed.discografias || parsed;
+      if(!Array.isArray(nuevos)||!nuevos.length){toast('Archivo JSON invalido o vacio','error');return;}
+      const validos = nuevos.filter(r=>r.banda&&typeof r.banda==='string');
+      if(!validos.length){toast('No se encontraron registros validos','error');return;}
+      const modo = confirm(
+        'Se encontraron '+validos.length+' registros en el archivo.\n\n'+
+        'Tienes '+db.length+' registros actuales.\n\n'+
+        'OK = Combinar (agrega sin borrar los tuyos)\n'+
+        'Cancelar = Reemplazar todo'
+      );
+      if(modo){
+        let agregados=0, actualizados=0;
+        for(const r of validos){
+          const idx=db.findIndex(x=>x.banda.toLowerCase()===r.banda.toLowerCase());
+          if(idx>=0){ const merged={...db[idx],...r,id:db[idx].id}; db[idx]=merged; await idbPut(merged); actualizados++; }
+          else { const newId=await idbPut(r); r.id=newId; db.push(r); agregados++; }
+        }
+        toast('Combinado: '+agregados+' nuevos, '+actualizados+' actualizados','info');
+      } else {
+        db = validos.map((r,i)=>({...r,id:i+1}));
+        await idbPutAll(db);
+        toast('Reemplazado: '+validos.length+' registros cargados','info');
+      }
+      updateStats(); updateHddDatalist(); renderTabla(); updateHddFilter();
+    } catch(err){ toast('Error al leer el archivo JSON','error'); }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function exportarCSV() {
+  const headers=['Artista/Banda','Genero','N Discos','Ano','Disco Duro','Reproducciones','Rating','Formato','Notas'];
+  const rows=db.map(r=>[r.banda,r.genero||'',r.discos||'',r.anio||'',r.hdd||'',r.repros||0,r.rating||'',r.formato||'',r.notas||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='discografias.csv'; a.click();
+  toast('Exportando CSV... ('+db.length+' registros)','info');
+}
+
+// ── ARRANQUE ──
+iniciar();
+</script>
+</body>
+</html>
